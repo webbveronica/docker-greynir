@@ -1,0 +1,30 @@
+version: '3'
+services:
+  modelserver:
+    image: opennmt/tensorflow-serving:2.0.0-gpu
+    ports:
+      - 8500:8500
+      - 8501:8501
+    volumes:
+      - ./conf/models:/models
+    command: tensorflow_model_server --port=8500 --rest_api_port=8501 --model_config_file=/models/models.conf --rest_api_timeout_in_ms=300000
+    depends_on:
+      - greynir
+  nnserver:
+    image: mideind/nnserver:latest
+    ports:
+      - 5005:5005
+    environment:
+      - MS_HOST=modelserver
+      - MS_PORT=8501
+      - NNSERVER_PARSING_VOCAB=parsing_tokens_191202.txt
+    depends_on:
+      - modelserver
+  greynir:
+    environment:
+      - NN_TRANSLATION_HOST=nnserver
+      - NN_TRANSLATION_PORT=5005
+      - NN_TRANSLATION_ENABLED=1
+      - NN_PARSING_HOST=nnserver
+      - NN_PARSING_PORT=5005
+      - NN_PARSING_ENABLED=1
